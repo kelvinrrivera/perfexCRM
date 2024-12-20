@@ -1,6 +1,6 @@
 FROM php:8.1-apache
 
-# Instalar las dependencias necesarias
+# Actualizar y instalar dependencias comunes
 RUN apt-get update && apt-get install -y \
     libzip-dev \
     zip \
@@ -10,14 +10,13 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     libicu-dev \
     zlib1g-dev \
-    && docker-php-ext-install -j$(nproc) \
-	bcmath \
-    mysqli \
-    pdo_mysql \
-    zip \
-    gd \
-    intl \
-    imap
+    libonig-dev
+
+# Instalar extensiones de PHP
+RUN docker-php-ext-install -j$(nproc) bcmath mysqli pdo_mysql gd intl
+
+# Configurar la extensión IMAP (incluyendo las dependencias de kerberos y ssl)
+RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl && docker-php-ext-install imap
 
 # Habilitar los módulos necesarios
 RUN docker-php-ext-enable mysqli pdo_mysql zip gd intl imap
