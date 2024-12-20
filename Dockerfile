@@ -1,45 +1,47 @@
-FROM php:8.1-apache
+FROM php:8.1-fpm # Reemplaza con tu imagen base si es diferente
 
-# Actualizar y instalar dependencias comunes
+# Instalación de dependencias generales
 RUN apt-get update && apt-get install -y \
-    libzip-dev \
+    git \
     zip \
     unzip \
+    curl \
     libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libicu-dev \
-    zlib1g-dev \
-    libonig-dev
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    default-mysql-client
 
-# Instalar extensiones de PHP
-RUN docker-php-ext-install -j$(nproc) bcmath mysqli pdo_mysql gd intl
+# Instala dependencias necesarias para la extensión IMAP
+RUN apt-get update && apt-get install -y \
+    libkrb5-dev \
+    libc-client-dev \
+    libssl-dev
 
-# Configurar la extensión IMAP (incluyendo las dependencias de kerberos y ssl)
-RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl && docker-php-ext-install imap
+# Instala extensiones de PHP
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl && \
+    docker-php-ext-install imap
 
-# Habilitar los módulos necesarios
-RUN docker-php-ext-enable mysqli pdo_mysql zip gd intl imap
+# Instala Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Habilitar mod_rewrite
-RUN a2enmod rewrite
-
-# Establecer el directorio de trabajo
+# Establece el directorio de trabajo
 WORKDIR /var/www/html
 
-# Copiar los archivos de la aplicación
+# Copia los archivos de la aplicación
 COPY . .
 
-# Configurar permisos de los archivos
+# Instala las dependencias de composer
+RUN composer install --no-scripts --no-interaction --no-autoloader
+
+# Genera el autoloader
+RUN composer dump-autoload --optimize
+
+# Configura el usuario
 RUN chown -R www-data:www-data /var/www/html
-RUN chmod 755 /var/www/html/uploads/
-RUN chmod 755 /var/www/html/application/config/
-RUN chmod 755 /var/www/html/application/config/config.php
-RUN chmod 755 /var/www/html/application/config/app-config-sample.php
-RUN chmod 755 /var/www/html/temp/
 
-# Exponer el puerto 80
-EXPOSE 80
+# Exponiendo el puerto 9000
+EXPOSE 9000
 
-# Comando para ejecutar el servidor apache
-CMD ["apache2-foreground"]
+CMD ["php-fpm"]
