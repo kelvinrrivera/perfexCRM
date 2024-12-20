@@ -8,16 +8,16 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
-	  libicu-dev \
+    libicu-dev \
+    zlib1g-dev \
     && docker-php-ext-install -j$(nproc) \
-	  bcmath \
+	bcmath \
     mysqli \
     pdo_mysql \
     zip \
     gd \
     intl \
-    imap \
-    && docker-php-ext-configure imap --with-kerberos --with-imap-ssl
+    imap
 
 # Habilitar los módulos necesarios
 RUN docker-php-ext-enable mysqli pdo_mysql zip gd intl imap
@@ -38,7 +38,6 @@ RUN chmod 755 /var/www/html/application/config/
 RUN chmod 755 /var/www/html/application/config/config.php
 RUN chmod 755 /var/www/html/application/config/app-config-sample.php
 RUN chmod 755 /var/www/html/temp/
-
 
 # Exponer el puerto 80
 EXPOSE 80
